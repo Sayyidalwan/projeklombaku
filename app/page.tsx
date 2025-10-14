@@ -1,9 +1,10 @@
 
-
-export default function Home() {
+import formadmin from "@/components/ui/custom/formadmin" 
+const page = () =>  {
   return (
-    <h1 className="title text-4xl">sayyid</h1>
-    
-   
+    <div>
+      <formadmin />
+    </div>
   );
 }
+export default page;

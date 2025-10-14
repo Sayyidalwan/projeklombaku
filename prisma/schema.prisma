@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  user_id    Int       @id @default(autoincrement())
+  nama       String    @db.VarChar(100)
+  nomor_wa   String    @unique @db.VarChar(20)
+  alamat     String?   @db.VarChar(255)
+  password   String?   @db.VarChar(255)
+  anggota    KeluargaAnggota[]
+
+  @@map("users")
+}
+
+model KeluargaAnggota {
+  anggota_id  Int       @id @default(autoincrement())
+  user_id     Int
+  nama        String    @db.VarChar(100)
+  umur        Int?
+  hubungan    String?   @db.VarChar(50)
+  nomor_wa    String?   @db.VarChar(20)
+  is_active   Boolean   @default(true)
+  user        User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  // relasi balik
+  obat             Obat[]
+  jadwal_kontrol   JadwalKontrol[]
+  
+  @@map("keluarga_anggota")
+}
+
+model Obat {
+  obat_id         Int       @id @default(autoincrement())
+  anggota_id      Int
+  nama_obat       String    @db.VarChar(100)
+  dosis           String    @db.VarChar(50)
+  keterangan      String?   @db.VarChar(100)
+  tanggal_mulai   DateTime  @db.Date
+  tanggal_selesai DateTime  @db.Date
+  created_at      DateTime  @default(now())
+
+  // Relasi
+  anggota         KeluargaAnggota @relation(fields: [anggota_id], references: [anggota_id])
+  jadwal_obat     JadwalObat[]
+
+  @@map("obat")
+}
+
+model JadwalObat {
+  jadwal_id  Int      @id @default(autoincrement())
+  obat_id    Int
+  jam_minum  DateTime @db.Time
+  status     Status   @default(BELUM)
+  tanggal    DateTime @db.Date
+
+  // Relasi
+  obat       Obat     @relation(fields: [obat_id], references: [obat_id])
+
+  @@map("jadwal_obat")
+}
+
+model JadwalKontrol {
+  kontrol_id       Int       @id @default(autoincrement())
+  anggota_id       Int
+  tanggal_kontrol  DateTime  @db.Date
+  jam              DateTime  @db.Time
+  tempat           String    @db.VarChar(100)
+  keterangan       String?   @db.VarChar(255)
+  created_at       DateTime  @default(now())
+
+  // Relasi
+  anggota          KeluargaAnggota @relation(fields: [anggota_id], references: [anggota_id])
+
+  @@map("jadwal_kontrol")
+}
+
+// ENUM untuk status minum
+enum Status {
+  BELUM
+  SUDAH
+}

@@ -1,10 +1,13 @@
+import Navbar from "./components/Navbar"
 
-import formadmin from "@/components/ui/custom/formadmin" 
-const page = () =>  {
+export default function Home() {
   return (
-    <div>
-      <formadmin />
-    </div>
-  );
+    <main>
+      <Navbar />
+      <section className="p-10 text-center">
+        <h2 className="text-3xl font-semibold">Selamat Datang</h2>
+        <p className="mt-4 text-gray-600">Ini halaman depan websitemu.</p>
+      </section>
+    </main>
+  )
 }
-export default page;

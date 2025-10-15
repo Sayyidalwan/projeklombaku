@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function HomePage() {
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-4">
@@ -10,18 +12,18 @@ export default function HomePage() {
         </p>
 
         <div className="space-y-3">
-          <a
+          <Link
             href="/login"
             className="block w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition"
           >
             Login
-          </a>
-          <a
+          </Link>
+          <Link
             href="/register"
             className="block w-full bg-gray-200 text-gray-800 py-2 rounded-lg font-medium hover:bg-gray-300 transition"
           >
             Register
-          </a>
+          </Link>
         </div>
       </div>
     </main>

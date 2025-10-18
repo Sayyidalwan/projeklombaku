@@ -1,19 +1,25 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 export default function FormRegistrasi() {
+  const router = useRouter();
+
   const [formData, setFormData] = useState({
     nama: "",
-    nomorTelepon: "",
+    nomor_wa: "",
   });
+
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { id, value } = e.target;
     setFormData({ ...formData, [id]: value });
   };
@@ -23,7 +29,7 @@ export default function FormRegistrasi() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/registrasi", {
+      const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -31,12 +37,18 @@ export default function FormRegistrasi() {
 
       const data = await res.json();
 
-      if (!res.ok) throw new Error(data.error || "Gagal menyimpan data");
-
-      alert("✅ Registrasi berhasil!");
-      setFormData({ nama: "", nomorTelepon: "" });
-    } catch (err: any) {
-      alert(`❌ ${err.message}`);
+      if (res.ok && data.success) {
+        alert("✅ Registrasi berhasil! Anda akan diarahkan ke halaman Login.");
+        setFormData({ nama: "", nomor_wa: "" });
+        router.push("/login");
+      } else {
+        const errorMessage =
+          data.errors?.join(" ") || data.message || "❌ Gagal registrasi.";
+        alert(errorMessage);
+      }
+    } catch (error) {
+      console.error("Fetch error:", error);
+      alert("Terjadi kesalahan saat menghubungi server.");
     } finally {
       setLoading(false);
     }
@@ -54,11 +66,11 @@ export default function FormRegistrasi() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="nama">Username</Label>
+              <Label htmlFor="nama">Nama</Label>
               <Input
                 id="nama"
                 type="text"
-                placeholder="Masukkan nama pengguna"
+                placeholder="Masukkan nama lengkap"
                 value={formData.nama}
                 onChange={handleChange}
                 required
@@ -66,12 +78,12 @@ export default function FormRegistrasi() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="noWa">Nomor WhatsApp</Label>
+              <Label htmlFor="nomor_wa">Nomor WhatsApp</Label>
               <Input
-                id="nomorTelepon"
+                id="nomor_wa"
                 type="tel"
                 placeholder="Contoh: 6281234567890"
-                value={formData.nomorTelepon}
+                value={formData.nomor_wa}
                 onChange={handleChange}
                 required
               />

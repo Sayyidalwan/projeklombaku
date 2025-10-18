@@ -9,9 +9,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 export default function FormRegistrasi() {
   const [formData, setFormData] = useState({
-    username: "",
-    noWa: "",
-    alamat: "",
+    nama: "",
+    nomor_wa: "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -19,11 +18,23 @@ export default function FormRegistrasi() {
     setFormData({ ...formData, [id]: value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Data terkirim:", formData);
-    alert("Registrasi berhasil!");
-    setFormData({ username: "", noWa: "", alamat: "" });
+
+    const res = await fetch("/api/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      console.log("Data masuk ke database:", data);
+      alert("Registrasi berhasil!");
+      setFormData({ nama: "", nomor_wa: "" });
+    } else {
+      alert("Gagal registrasi");
+    }
   };
 
   return (
@@ -38,35 +49,24 @@ export default function FormRegistrasi() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="nama">Nama</Label>
               <Input
-                id="username"
+                id="nama"
                 type="text"
-                placeholder="Masukkan nama pengguna"
-                value={formData.username}
+                placeholder="Masukkan nama lengkap"
+                value={formData.nama}
                 onChange={handleChange}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="noWa">Nomor WhatsApp</Label>
+              <Label htmlFor="nomor_wa">Nomor WhatsApp</Label>
               <Input
-                id="noWa"
+                id="nomor_wa"
                 type="tel"
                 placeholder="Contoh: 6281234567890"
-                value={formData.noWa}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="alamat">Alamat</Label>
-              <Textarea
-                id="alamat"
-                placeholder="Masukkan alamat lengkap"
-                value={formData.alamat}
+                value={formData.nomor_wa}
                 onChange={handleChange}
                 required
               />

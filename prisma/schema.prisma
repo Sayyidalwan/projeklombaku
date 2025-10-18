@@ -6,8 +6,8 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../app/generated/prisma"
 }
+
 
 datasource db {
   provider = "mysql"
@@ -18,8 +18,6 @@ model User {
   user_id    Int       @id @default(autoincrement())
   nama       String    @db.VarChar(100)
   nomor_wa   String    @unique @db.VarChar(20)
-  alamat     String?   @db.VarChar(255)
-  password   String?   @db.VarChar(255)
   anggota    KeluargaAnggota[]
 
   @@map("users")

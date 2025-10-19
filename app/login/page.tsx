@@ -17,12 +17,25 @@ export default function LoginPage() {
     setFormData({ ...formData, [id]: value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Data login:", formData);
-    alert(`Selamat datang, ${formData.username}!`);
-    setFormData({ username: "", noWa: "" });
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  const res = await fetch("/api/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(formData),
+  });
+
+  const data = await res.json();
+
+  if (data.success) {
+    alert(`Selamat datang, ${data.user.nama}!`);
+    window.location.href = "/dashboard";
+  } else {
+    alert(data.message);
+  }
+};
+
 
   return (
     <main className="flex items-center justify-center min-h-screen bg-gray-50 px-4">

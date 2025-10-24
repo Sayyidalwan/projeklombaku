@@ -1,11 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 
-// Tipe untuk Form dan Error
 interface FormData {
   anggota_id: string;
-  tanggal_kontrol: string;
-  jam: string;
+  tanggal_kontrol: string; // YYYY-MM-DD
+  jam: string; // HH:MM
   tempat: string;
   keterangan: string;
 }
@@ -16,8 +15,22 @@ interface ErrorData {
   jam?: string;
   tempat?: string;
   keterangan?: string;
-  global?: string; // Untuk error non-field spesifik
+  global?: string;
 }
+
+// Helper untuk memetakan pesan error server ke field yang relevan
+const mapServerError = (message: string): keyof ErrorData | 'global' => {
+  if (message.includes("anggota wajib dipilih") || message.includes("ID anggota tidak valid")) return "anggota_id";
+  if (message.includes("Tanggal") && message.includes("wajib diisi")) return "tanggal_kontrol";
+  if (message.includes("jam kontrol wajib diisi")) return "jam";
+  if (message.includes("Tempat kontrol")) return "tempat";
+  if (message.includes("Keterangan maksimal")) return "keterangan";
+  if (message.includes("Jadwal kontrol tidak boleh di masa lalu") || message.includes("Format tanggal atau jam tidak valid")) {
+    // Jika ada error tanggal dan jam, fokuskan pada salah satu yang terisi
+    return "tanggal_kontrol"; // Atau jam, tapi tanggal lebih utama
+  }
+  return "global";
+};
 
 export default function FormKontrol() {
   const [anggotaList, setAnggotaList] = useState<any[]>([]);
@@ -39,42 +52,52 @@ export default function FormKontrol() {
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    // Menghapus error saat user mulai mengetik/mengubah field
+    // Bersihkan error spesifik saat field diubah
     setErrors(prev => ({ ...prev, [e.target.id]: undefined, global: undefined }));
     setForm({ ...form, [e.target.id]: e.target.value });
   };
 
   const validateForm = (formData: FormData): ErrorData => {
     const newErrors: ErrorData = {};
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
     
-    // 1. Anggota ID
+    // 1. Validasi Anggota
     if (!formData.anggota_id) {
       newErrors.anggota_id = "Anggota keluarga wajib dipilih.";
     }
 
-    // 2. Tanggal Kontrol
+    // 2. Validasi Tanggal dan Jam
     if (!formData.tanggal_kontrol) {
       newErrors.tanggal_kontrol = "Tanggal kontrol wajib diisi.";
-    } else if (formData.tanggal_kontrol < today) {
-      // Hanya cek tanggal, bukan jam, untuk validasi cepat.
-      newErrors.tanggal_kontrol = "Tanggal kontrol tidak boleh di masa lalu.";
     }
-
-    // 3. Jam Kontrol
+    
     if (!formData.jam) {
       newErrors.jam = "Jam kontrol wajib diisi.";
     }
 
-    // 4. Tempat Kontrol
-    if (formData.tempat.trim().length < 3) {
+    // Validasi gabungan tanggal dan jam
+    if (formData.tanggal_kontrol && formData.jam) {
+      // Menggabungkan tanggal dan jam untuk validasi waktu di masa lalu
+      const scheduledDateTime = new Date(`${formData.tanggal_kontrol}T${formData.jam}:00`);
+      
+      if (isNaN(scheduledDateTime.getTime())) {
+          newErrors.tanggal_kontrol = "Format tanggal atau jam tidak valid.";
+      } else if (scheduledDateTime <= now) {
+          newErrors.tanggal_kontrol = "Jadwal kontrol harus di masa depan.";
+      }
+    }
+
+    // 3. Validasi Tempat Kontrol
+    if (formData.tempat.trim().length === 0) {
+      newErrors.tempat = "Tempat kontrol wajib diisi.";
+    } else if (formData.tempat.trim().length < 3) {
       newErrors.tempat = "Tempat kontrol minimal 3 karakter.";
     } else if (formData.tempat.length > 100) {
       newErrors.tempat = "Tempat kontrol maksimal 100 karakter.";
     }
 
-    // 5. Keterangan
-    if (formData.keterangan.length > 255) {
+    // 4. Validasi Keterangan
+    if (formData.keterangan && formData.keterangan.length > 255) {
       newErrors.keterangan = "Keterangan maksimal 255 karakter.";
     }
 
@@ -89,7 +112,6 @@ export default function FormKontrol() {
     
     if (Object.keys(clientErrors).length > 0) {
         setErrors(clientErrors);
-        // Alert minimal, fokus pada pesan di field
         alert("Mohon lengkapi atau perbaiki isian yang ditandai merah."); 
         return; 
     }
@@ -106,34 +128,40 @@ export default function FormKontrol() {
         const data = await res.json();
 
         if (!res.ok) {
-            // Tangani error dari Back-end
-            if (data.details) {
-                // Tampilkan error back-end pertama ke user
-                setErrors({ global: data.details[0] });
-                alert(`Gagal menyimpan: ${data.details[0]}`);
+            const serverErrors: ErrorData = {};
+            if (data.details && Array.isArray(data.details)) {
+                // Proses array error dari server
+                data.details.forEach((detail: string) => {
+                    const field = mapServerError(detail);
+                    // Hanya simpan error pertama untuk setiap field
+                    if (!serverErrors[field]) {
+                        serverErrors[field] = detail;
+                    }
+                });
+                setErrors(serverErrors);
+                // Tampilkan pesan error pertama sebagai alert global
+                alert(`Gagal menyimpan: ${data.details[0]}`); 
             } else {
                  setErrors({ global: data.error || "Terjadi kesalahan saat menyimpan data." });
                  alert(data.error || "Terjadi kesalahan saat menyimpan data.");
             }
         } else {
             alert(data.message);
-            // Reset form setelah berhasil
+            // Reset form jika berhasil
             setForm({ anggota_id: "", tanggal_kontrol: "", jam: "", tempat: "", keterangan: "" });
         }
     } catch (error) {
-        setErrors({ global: "Gagal terhubung ke server." });
-        alert("Gagal terhubung ke server.");
+        setErrors({ global: "Gagal terhubung ke server. Cek koneksi Anda." });
+        alert("Gagal terhubung ke server. Cek koneksi Anda.");
     } finally {
         setIsLoading(false);
     }
   };
   
-  // Komponen untuk menampilkan pesan error
   const ErrorMessage: React.FC<{ message: string | undefined }> = ({ message }) => {
     if (!message) return null;
     return <p className="text-sm text-red-600 mt-1 font-medium">{message}</p>;
   };
-
 
   return (
     <section className="border p-6 rounded-lg bg-white shadow-sm space-y-4">
@@ -145,9 +173,9 @@ export default function FormKontrol() {
         </div>}
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Pilih Anggota */}
+        {/* Anggota ID */}
         <div className="col-span-2">
-          <label htmlFor="anggota_id" className="font-medium text-gray-700">Pilih Anggota</label>
+          <label htmlFor="anggota_id" className="font-medium text-gray-700">Pilih Anggota <span className="text-red-500">*</span></label>
           <select
             id="anggota_id"
             value={form.anggota_id}
@@ -167,7 +195,7 @@ export default function FormKontrol() {
 
         {/* Tanggal Kontrol */}
         <div>
-          <label htmlFor="tanggal_kontrol" className="font-medium text-gray-700">Tanggal Kontrol</label>
+          <label htmlFor="tanggal_kontrol" className="font-medium text-gray-700">Tanggal Kontrol <span className="text-red-500">*</span></label>
           <input
             id="tanggal_kontrol"
             type="date"
@@ -181,7 +209,7 @@ export default function FormKontrol() {
 
         {/* Jam Kontrol */}
         <div>
-          <label htmlFor="jam" className="font-medium text-gray-700">Jam Kontrol</label>
+          <label htmlFor="jam" className="font-medium text-gray-700">Jam Kontrol <span className="text-red-500">*</span></label>
           <input
             id="jam"
             type="time"
@@ -195,7 +223,7 @@ export default function FormKontrol() {
 
         {/* Tempat Kontrol */}
         <div className="col-span-2">
-          <label htmlFor="tempat" className="font-medium text-gray-700">Tempat Kontrol</label>
+          <label htmlFor="tempat" className="font-medium text-gray-700">Tempat Kontrol <span className="text-red-500">*</span></label>
           <input
             id="tempat"
             value={form.tempat}
@@ -204,7 +232,7 @@ export default function FormKontrol() {
             className={`border px-3 py-2 rounded w-full mt-1 ${errors.tempat ? 'border-red-500' : ''}`}
           />
           <ErrorMessage message={errors.tempat} />
-          <p className="text-sm text-gray-500 mt-1">Isi dengan nama tempat kontrol (rumah sakit, klinik, dll).</p>
+          <p className="text-sm text-gray-500 mt-1">Isi dengan nama tempat kontrol (rumah sakit, klinik, dll). Minimal 3 karakter.</p>
         </div>
 
         {/* Keterangan */}
@@ -218,10 +246,10 @@ export default function FormKontrol() {
             className={`border px-3 py-2 rounded w-full mt-1 ${errors.keterangan ? 'border-red-500' : ''}`}
           />
           <ErrorMessage message={errors.keterangan} />
-          <p className="text-sm text-gray-500 mt-1">Tambahkan catatan atau detail tambahan jika perlu.</p>
+          <p className="text-sm text-gray-500 mt-1">Tambahkan catatan atau detail tambahan jika perlu. Maksimal 255 karakter.</p>
         </div>
 
-        {/* Tombol Simpan */}
+        {/* Tombol Submit */}
         <div className="col-span-2 flex justify-end">
           <button
             type="submit"

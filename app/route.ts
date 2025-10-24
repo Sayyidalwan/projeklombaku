@@ -1,123 +1,61 @@
- // app/api/anggota/route.ts
-
-
 import { PrismaClient } from "@prisma/client";
-
-import { NextResponse } from "next/server";
-
-
-// Inisialisasi Prisma Client
+import { redirect } from "next/dist/server/api-utils";
 
 const prisma = new PrismaClient();
 
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
 
-// =========================================================================
+    const { nama, nomor_wa } = body;
+    const errors: string[] = [];
 
-// FUNGSI GET: Mengambil daftar anggota (UNTUK MENGATASI ERROR 405 DI DASHBOARD)
+    if (!nama || nama.trim() === "") {
+      errors.push("Nama wajib diisi.");
+    }
+    if (!nomor_wa || nomor_wa.trim() === "") {
+      errors.push("Nomor WhatsApp wajib diisi.");
+    }
 
-// =========================================================================
+    const clean_nomor_wa = nomor_wa ? nomor_wa.replace(/\D/g, '') : ''; 
+    if (clean_nomor_wa.length < 10 || clean_nomor_wa.length > 15) {
+      errors.push("Format Nomor WhatsApp tidak valid.");
+    }
+    
+    if (clean_nomor_wa && clean_nomor_wa.length >= 10 && clean_nomor_wa.length <= 15) {
+        const existingUser = await prisma.user.findUnique({
+            where: { nomor_wa: clean_nomor_wa },
+        });
 
-export async function GET() {
+        if (existingUser) {
+            errors.push("Nomor WhatsApp ini sudah terdaftar. Silakan login atau gunakan nomor lain.");
+        }
+    }
 
-try {
+    if (errors.length > 0) {
+      return new Response(JSON.stringify({ 
+          success: false, 
+          message: "Data yang dimasukkan tidak valid.",
+          errors: errors 
+      }), { 
+          status: 400, 
+          headers: { 'Content-Type': 'application/json' } 
+      });
+    }
 
-// Ambil semua data anggota dari database
+    const newUser = await prisma.user.create({
+      data: { 
+          nama: nama.trim(), 
+          nomor_wa: clean_nomor_wa 
+      },
+    });
 
-const dataAnggota = await prisma.keluargaAnggota.findMany();
-
-// Kembalikan data dalam format JSON dengan status 200 OK
-
-return NextResponse.json(dataAnggota, { status: 200 });
-
-} catch (error) {
-
-// Log error di konsol server
-
-console.error("Error saat mengambil data anggota:", error);
-
-// Kembalikan respons error 500 yang valid ke frontend
-
-return NextResponse.json({
-
-error: "Gagal memuat data anggota dari database."
-
-}, { status: 500 });
-
+    return Response.json({ success: true, user: newUser, redirectUrl: "/login" });
+    
+  } catch (error: any) {
+    return new Response(JSON.stringify({ 
+        success: false, 
+        message: "Terjadi kesalahan server: " + error.message 
+    }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  }
 }
-
-}
-
-
-// =========================================================================
-
-// FUNGSI POST: Menambah data anggota baru
-
-// =========================================================================
-
-export async function POST(request: Request) {
-
-try {
-
-const body = await request.json();
-
-
-// Pastikan Anda mendapatkan user_id dengan benar (misalnya dari session/token)
-
-// Sementara: user_id diset manual (misal 35) seperti yang Anda tentukan
-
-const user_id = 35;
-
-
-const anggotaBaru = await prisma.keluargaAnggota.create({
-
-data: {
-
-// user_id harus selalu ada jika ini adalah field wajib (required)
-
-user_id: user_id,
-
-nama: body.nama,
-
-// Konversi umur ke integer. Jika kosong/null, set null jika field di Prisma memungkinkan (optional)
-
-umur: body.umur ? parseInt(body.umur) : null,
-
-hubungan: body.hubungan || null,
-
-nomor_wa: body.nomor_wa || null,
-
-},
-
-});
-
-
-// Respons sukses dengan Status 201 Created
-
-return NextResponse.json({
-
-message: "Anggota berhasil ditambahkan.",
-
-data: anggotaBaru,
-
-}, { status: 201 });
-
-} catch (error) {
-
-// Log error di konsol server untuk debugging
-
-console.error("Error saat menambah anggota baru:", error);
-
-// Respons error 500 yang jelas ke frontend
-
-return NextResponse.json({
-
-error: "Gagal menambah anggota. Cek log server untuk detail kesalahan."
-
-}, { status: 500 });
-
-}
-
-}
-
-
-// Hapus atau ganti inisialisasi Prisma Client jika Anda sudah menggunakan file prismaclient.ts terpusat.

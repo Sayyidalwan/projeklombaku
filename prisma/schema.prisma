@@ -17,9 +17,7 @@ datasource db {
 model User {
   user_id    Int       @id @default(autoincrement())
   nama       String    @db.VarChar(100)
-  nomor_wa   String    @unique @db.VarChar(20)
-  alamat     String?   @db.VarChar(255)
-  password   String?   @db.VarChar(255)
+  nomorTelepon  String  @db.VarChar(100)
   anggota    KeluargaAnggota[]
 
   @@map("users")

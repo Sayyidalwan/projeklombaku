@@ -3,27 +3,43 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 export default function FormRegistrasi() {
   const [formData, setFormData] = useState({
-    username: "",
-    noWa: "",
-    alamat: "",
+    nama: "",
+    nomorTelepon: "",
   });
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
     setFormData({ ...formData, [id]: value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Data terkirim:", formData);
-    alert("Registrasi berhasil!");
-    setFormData({ username: "", noWa: "", alamat: "" });
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/registrasi", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || "Gagal menyimpan data");
+
+      alert("✅ Registrasi berhasil!");
+      setFormData({ nama: "", nomorTelepon: "" });
+    } catch (err: any) {
+      alert(`❌ ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -38,12 +54,12 @@ export default function FormRegistrasi() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="nama">Username</Label>
               <Input
-                id="username"
+                id="nama"
                 type="text"
                 placeholder="Masukkan nama pengguna"
-                value={formData.username}
+                value={formData.nama}
                 onChange={handleChange}
                 required
               />
@@ -52,21 +68,10 @@ export default function FormRegistrasi() {
             <div className="space-y-2">
               <Label htmlFor="noWa">Nomor WhatsApp</Label>
               <Input
-                id="noWa"
+                id="nomorTelepon"
                 type="tel"
                 placeholder="Contoh: 6281234567890"
-                value={formData.noWa}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="alamat">Alamat</Label>
-              <Textarea
-                id="alamat"
-                placeholder="Masukkan alamat lengkap"
-                value={formData.alamat}
+                value={formData.nomorTelepon}
                 onChange={handleChange}
                 required
               />
@@ -74,9 +79,10 @@ export default function FormRegistrasi() {
 
             <Button
               type="submit"
+              disabled={loading}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
             >
-              Daftar Sekarang
+              {loading ? "Menyimpan..." : "Daftar Sekarang"}
             </Button>
           </form>
         </CardContent>

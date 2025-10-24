@@ -1,3 +1,5 @@
+// File: components/forms/formAnggota.tsx
+
 "use client";
 
 import { useState } from "react";
@@ -19,13 +21,35 @@ export default function FormAnggota() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
+    
+    // 1. Lakukan permintaan POST ke API
     const res = await fetch("/api/anggota", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
+    
+    // 2. Ambil data respons (JSON)
     const data = await res.json();
-    alert(data.message);
+    
+    // 3. ⭐️ PERBAIKAN: Cek status respons (res.ok = Status 200-299)
+    if (res.ok) { 
+        // Sukses: Tampilkan pesan dari server, atau pesan default jika properti 'message' hilang
+        alert(data.message || "Data anggota berhasil disimpan.");
+        
+        // Reset form setelah sukses
+        setForm({
+            nama: "",
+            umur: "",
+            hubungan: "",
+            nomor_wa: "",
+        });
+
+    } else { 
+        // Gagal (Status 4xx atau 5xx): Tampilkan pesan error dari server
+        // Properti 'error' dikirim dari backend saat Status 500
+        alert(data.error || "Gagal menyimpan data. Terjadi kesalahan pada server atau jaringan.");
+    }
   };
 
   return (

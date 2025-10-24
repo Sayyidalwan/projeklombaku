@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from 'next/navigation'; 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 export default function FormRegistrasi() {
+  const router = useRouter(); 
+
   const [formData, setFormData] = useState({
     nama: "",
     nomor_wa: "",
@@ -21,19 +24,29 @@ export default function FormRegistrasi() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const res = await fetch("/api/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
-    });
+    try {
+        const res = await fetch("/api/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        });
 
-    if (res.ok) {
-      const data = await res.json();
-      console.log("Data masuk ke database:", data);
-      alert("Registrasi berhasil!");
-      setFormData({ nama: "", nomor_wa: "" });
-    } else {
-      alert("Gagal registrasi");
+        const data = await res.json(); 
+
+        if (res.ok && data.success) { 
+          console.log("Data masuk ke database:", data);
+          alert("Registrasi berhasil! Anda akan diarahkan ke halaman Login.");
+          setFormData({ nama: "", nomor_wa: "" });
+
+          router.push('/login'); 
+
+        } else {
+            const errorMessage = data.errors?.join(' ') || data.message || "Gagal registrasi.";
+            alert(errorMessage);
+        }
+    } catch (error) {
+        console.error("Fetch error:", error);
+        alert("Terjadi kesalahan saat menghubungi server.");
     }
   };
 

@@ -1,22 +1,14 @@
 "use client";
 
 import { useState } from "react";
-<<<<<<< HEAD
 import { useRouter } from "next/navigation";
-=======
-import { useRouter } from 'next/navigation'; 
->>>>>>> 577394e (perbaiki)
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 export default function FormRegistrasi() {
-<<<<<<< HEAD
   const router = useRouter();
-=======
-  const router = useRouter(); 
->>>>>>> 577394e (perbaiki)
 
   const [formData, setFormData] = useState({
     nama: "",
@@ -37,7 +29,6 @@ export default function FormRegistrasi() {
     setLoading(true);
 
     try {
-<<<<<<< HEAD
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -47,6 +38,7 @@ export default function FormRegistrasi() {
       const data = await res.json();
 
       if (res.ok && data.success) {
+        console.log("Data masuk ke database:", data);
         alert("✅ Registrasi berhasil! Anda akan diarahkan ke halaman Login.");
         setFormData({ nama: "", nomor_wa: "" });
         router.push("/login");
@@ -60,30 +52,6 @@ export default function FormRegistrasi() {
       alert("Terjadi kesalahan saat menghubungi server.");
     } finally {
       setLoading(false);
-=======
-        const res = await fetch("/api/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
-        });
-
-        const data = await res.json(); 
-
-        if (res.ok && data.success) { 
-          console.log("Data masuk ke database:", data);
-          alert("Registrasi berhasil! Anda akan diarahkan ke halaman Login.");
-          setFormData({ nama: "", nomor_wa: "" });
-
-          router.push('/login'); 
-
-        } else {
-            const errorMessage = data.errors?.join(' ') || data.message || "Gagal registrasi.";
-            alert(errorMessage);
-        }
-    } catch (error) {
-        console.error("Fetch error:", error);
-        alert("Terjadi kesalahan saat menghubungi server.");
->>>>>>> 577394e (perbaiki)
     }
   };
 

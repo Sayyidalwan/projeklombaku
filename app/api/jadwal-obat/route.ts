@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 
 const prisma = new PrismaClient();
 
-// Ambil semua jadwal minum obat
 export async function GET() {
   try {
     const data = await prisma.jadwalObat.findMany({
@@ -39,7 +38,6 @@ export async function GET() {
   }
 }
 
-// Ubah status minum obat
 export async function PATCH(req: Request, { params }: any) {
   try {
     const { status } = await req.json();

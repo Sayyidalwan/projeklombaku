@@ -18,7 +18,6 @@ interface ErrorData {
   global?: string;
 }
 
-// Helper untuk memetakan pesan error server ke field yang relevan
 const mapServerError = (message: string): keyof ErrorData | 'global' => {
   if (message.includes("anggota wajib dipilih") || message.includes("ID anggota tidak valid")) return "anggota_id";
   if (message.includes("Tanggal") && message.includes("wajib diisi")) return "tanggal_kontrol";
@@ -26,8 +25,7 @@ const mapServerError = (message: string): keyof ErrorData | 'global' => {
   if (message.includes("Tempat kontrol")) return "tempat";
   if (message.includes("Keterangan maksimal")) return "keterangan";
   if (message.includes("Jadwal kontrol tidak boleh di masa lalu") || message.includes("Format tanggal atau jam tidak valid")) {
-    // Jika ada error tanggal dan jam, fokuskan pada salah satu yang terisi
-    return "tanggal_kontrol"; // Atau jam, tapi tanggal lebih utama
+    return "tanggal_kontrol";
   }
   return "global";
 };
@@ -52,7 +50,6 @@ export default function FormKontrol() {
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    // Bersihkan error spesifik saat field diubah
     setErrors(prev => ({ ...prev, [e.target.id]: undefined, global: undefined }));
     setForm({ ...form, [e.target.id]: e.target.value });
   };
@@ -61,12 +58,10 @@ export default function FormKontrol() {
     const newErrors: ErrorData = {};
     const now = new Date();
     
-    // 1. Validasi Anggota
     if (!formData.anggota_id) {
       newErrors.anggota_id = "Anggota keluarga wajib dipilih.";
     }
 
-    // 2. Validasi Tanggal dan Jam
     if (!formData.tanggal_kontrol) {
       newErrors.tanggal_kontrol = "Tanggal kontrol wajib diisi.";
     }
@@ -75,9 +70,7 @@ export default function FormKontrol() {
       newErrors.jam = "Jam kontrol wajib diisi.";
     }
 
-    // Validasi gabungan tanggal dan jam
     if (formData.tanggal_kontrol && formData.jam) {
-      // Menggabungkan tanggal dan jam untuk validasi waktu di masa lalu
       const scheduledDateTime = new Date(`${formData.tanggal_kontrol}T${formData.jam}:00`);
       
       if (isNaN(scheduledDateTime.getTime())) {
@@ -87,7 +80,6 @@ export default function FormKontrol() {
       }
     }
 
-    // 3. Validasi Tempat Kontrol
     if (formData.tempat.trim().length === 0) {
       newErrors.tempat = "Tempat kontrol wajib diisi.";
     } else if (formData.tempat.trim().length < 3) {
@@ -96,7 +88,6 @@ export default function FormKontrol() {
       newErrors.tempat = "Tempat kontrol maksimal 100 karakter.";
     }
 
-    // 4. Validasi Keterangan
     if (formData.keterangan && formData.keterangan.length > 255) {
       newErrors.keterangan = "Keterangan maksimal 255 karakter.";
     }
@@ -130,16 +121,13 @@ export default function FormKontrol() {
         if (!res.ok) {
             const serverErrors: ErrorData = {};
             if (data.details && Array.isArray(data.details)) {
-                // Proses array error dari server
                 data.details.forEach((detail: string) => {
                     const field = mapServerError(detail);
-                    // Hanya simpan error pertama untuk setiap field
                     if (!serverErrors[field]) {
                         serverErrors[field] = detail;
                     }
                 });
                 setErrors(serverErrors);
-                // Tampilkan pesan error pertama sebagai alert global
                 alert(`Gagal menyimpan: ${data.details[0]}`); 
             } else {
                  setErrors({ global: data.error || "Terjadi kesalahan saat menyimpan data." });
@@ -147,7 +135,6 @@ export default function FormKontrol() {
             }
         } else {
             alert(data.message);
-            // Reset form jika berhasil
             setForm({ anggota_id: "", tanggal_kontrol: "", jam: "", tempat: "", keterangan: "" });
         }
     } catch (error) {

@@ -24,7 +24,6 @@ interface ErrorData {
   global?: string;
 }
 
-// Helper untuk memetakan pesan error server ke field yang relevan
 const mapServerError = (message: string): keyof ErrorData | 'global' => {
   if (message.includes("anggota wajib dipilih") || message.includes("ID anggota tidak valid")) return "anggota_id";
   if (message.includes("Nama obat wajib diisi") || message.includes("Nama obat maksimal")) return "nama_obat";
@@ -61,7 +60,6 @@ export default function FormObat() {
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    // Bersihkan error spesifik saat field diubah
     setErrors(prev => ({ ...prev, [e.target.id]: undefined, global: undefined }));
     setForm({ ...form, [e.target.id]: e.target.value });
   };
@@ -69,12 +67,10 @@ export default function FormObat() {
   const validateForm = (formData: FormData): ErrorData => {
     const newErrors: ErrorData = {};
 
-    // 1. Validasi Anggota
     if (!formData.anggota_id) {
       newErrors.anggota_id = "Anggota keluarga wajib dipilih.";
     }
 
-    // 2. Validasi Nama Obat
     if (formData.nama_obat.trim().length === 0) {
       newErrors.nama_obat = "Nama obat wajib diisi.";
     } else if (formData.nama_obat.trim().length < 3) {
@@ -83,7 +79,6 @@ export default function FormObat() {
       newErrors.nama_obat = "Nama obat maksimal 100 karakter.";
     }
 
-    // 3. Validasi Dosis
     if (formData.dosis.trim().length === 0) {
       newErrors.dosis = "Dosis wajib diisi.";
     } else if (formData.dosis.trim().length < 2) {
@@ -92,7 +87,6 @@ export default function FormObat() {
       newErrors.dosis = "Dosis maksimal 50 karakter.";
     }
     
-    // 4. Validasi Tanggal Mulai dan Selesai
     const tMulai = formData.tanggal_mulai ? new Date(formData.tanggal_mulai) : null;
     const tSelesai = formData.tanggal_selesai ? new Date(formData.tanggal_selesai) : null;
 
@@ -107,20 +101,16 @@ export default function FormObat() {
       newErrors.tanggal_selesai = "Tanggal Selesai tidak boleh sebelum Tanggal Mulai.";
     }
 
-    // 5. Validasi Jam Minum
     if (!formData.jam_minum) {
       newErrors.jam_minum = "Jam minum wajib diisi.";
     }
     
-    // 6. Validasi Tanggal Jadwal
     const tJadwal = formData.tanggal ? new Date(formData.tanggal) : null;
     if (!formData.tanggal) {
       newErrors.tanggal = "Tanggal Jadwal wajib diisi.";
     }
     
-    // 7. Validasi Logika Tanggal Jadwal
     if (tMulai && tSelesai && tJadwal) {
-        // Normalisasi waktu ke awal hari (00:00:00) untuk perbandingan tanggal saja
         const tJadwalNormalized = new Date(tJadwal.setHours(0, 0, 0, 0));
         const tMulaiNormalized = new Date(tMulai.setHours(0, 0, 0, 0));
         const tSelesaiNormalized = new Date(tSelesai.setHours(0, 0, 0, 0));
@@ -130,7 +120,6 @@ export default function FormObat() {
         }
     }
 
-    // 8. Validasi Keterangan
     if (formData.keterangan && formData.keterangan.length > 255) {
       newErrors.keterangan = "Keterangan maksimal 255 karakter.";
     }
@@ -164,16 +153,13 @@ export default function FormObat() {
         if (!res.ok) {
             const serverErrors: ErrorData = {};
             if (data.details && Array.isArray(data.details)) {
-                // Proses array error dari server
                 data.details.forEach((detail: string) => {
                     const field = mapServerError(detail);
-                    // Hanya simpan error pertama untuk setiap field
                     if (!serverErrors[field]) {
                         serverErrors[field] = detail;
                     }
                 });
                 setErrors(serverErrors);
-                // Tampilkan pesan error pertama sebagai alert global
                 alert(`Gagal menyimpan: ${data.details[0]}`); 
             } else {
                  setErrors({ global: data.error || "Terjadi kesalahan saat menyimpan data." });
@@ -181,7 +167,6 @@ export default function FormObat() {
             }
         } else {
             alert(data.message);
-            // Reset form jika berhasil
             setForm({ anggota_id: "", nama_obat: "", dosis: "", tanggal_mulai: "", tanggal_selesai: "", keterangan: "", jam_minum: "", tanggal: "" });
         }
     } catch (error) {

@@ -196,7 +196,7 @@ export default function FormRegistrasi() {
         <Button
           type="submit"
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
-          disabled={isSubmitting || isNamaInvalid || isNomorWaInvalid}
+          disabled={isSubmitting}
         >
           {isSubmitting ? "Memproses..." : "Daftar Sekarang"}
         </Button>
